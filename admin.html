@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LabLens Admin — Bio-Test Laboratory</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F2F0EB;
+    --ink: #212020;
+    --forest: #0078AF;
+    --sage: #4A9CC4;
+    --gold: #0078AF;
+    --rust: #C0392B;
+    --mist: #E6E7E8;
+    --glass: rgba(255,255,255,0.7);
+    --border: rgba(33,32,32,0.12);
+    --shadow: 0 4px 24px rgba(33,32,32,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "DM Sans", sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  
+  /* LOGIN SCREEN */
+  #login-screen {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--ink);
+    z-index: 1000;
+  }
+  .login-card {
+    background: var(--cream);
+    border-radius: 16px;
+    padding: 48px 56px;
+    width: 420px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.3);
+  }
+  .login-logo {
+    font-family: "DM Sans", sans-serif; font-weight: 700;
+    font-size: 28px;
+    color: var(--forest);
+    margin-bottom: 6px;
+  }
+  .login-sub {
+    font-size: 13px;
+    color: var(--sage);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+  .login-card label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+    opacity: 0.6;
+    margin-bottom: 8px;
+  }
+  .login-card input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: "DM Mono", monospace;
+    font-size: 14px;
+    background: white;
+    color: var(--ink);
+    margin-bottom: 20px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .login-card input:focus { border-color: var(--forest); }
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--forest);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #005a87; }
+  .login-error {
+    display: none;
+    color: var(--rust);
+    font-size: 13px;
+    margin-top: 12px;
+    text-align: center;
+  }
+
+  /* MAIN LAYOUT */
+  #admin-app { display: none; min-height: 100vh; flex-direction: column; }
+  
+  .topbar {
+    background: var(--ink);
+    padding: 0 32px;
+    height: 60px;
+    display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-logo {
+    font-family: "DM Sans", sans-serif; font-weight: 700;
+    color: white; font-size: 20px; flex: 1;
+  }
+  .topbar-logo span { color: var(--gold); }
+  .topbar-badge {
+    background: var(--rust);
+    color: white; font-size: 11px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px; letter-spacing: 0.06em;
+  }
+  .topbar-user {
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+  }
+  .topbar-logout {
+    background: rgba(255,255,255,0.1);
+    color: white; border: none;
+    padding: 6px 14px; border-radius: 6px;
+    font-size: 13px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .topbar-logout:hover { background: rgba(255,255,255,0.2); }
+
+  .layout { display: flex; flex: 1; }
+  
+  .sidebar {
+    width: 220px; background: white;
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky; top: 60px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+  }
+  .sidebar-section {
+    padding: 0 16px 8px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink); opacity: 0.35;
+    margin-top: 16px;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px;
+    font-size: 14px; font-weight: 500;
+    color: var(--ink); cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  .sidebar-item:hover { background: var(--mist); }
+  .sidebar-item.active {
+    background: var(--mist);
+    border-left-color: var(--forest);
+    color: var(--forest);
+  }
+  .sidebar-item .icon { font-size: 16px; }
+
+  .content { flex: 1; padding: 40px; max-width: 900px; }
+  
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+  
+  .panel-title {
+    font-family: "DM Sans", sans-serif; font-weight: 700;
+    font-size: 32px; color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .panel-desc {
+    font-size: 14px; color: var(--ink); opacity: 0.55;
+    margin-bottom: 32px;
+  }
+  
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 28px 32px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .card-title {
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--forest); margin-bottom: 20px;
+  }
+  
+  .form-group { margin-bottom: 20px; }
+  .form-label {
+    display: block;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--ink); opacity: 0.6;
+    margin-bottom: 8px;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: "DM Mono", monospace;
+    font-size: 13px;
+    background: var(--cream);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-textarea { min-height: 100px; resize: vertical; font-family: "DM Sans", sans-serif; font-size: 14px; }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--forest); background: white; }
+  .form-hint { font-size: 12px; color: var(--ink); opacity: 0.45; margin-top: 6px; }
+  
+  .btn-save {
+    padding: 10px 24px;
+    background: var(--forest);
+    color: white; border: none;
+    border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-save:hover { background: #005a87; }
+  .btn-danger {
+    padding: 10px 24px;
+    background: var(--rust);
+    color: white; border: none;
+    border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-danger:hover { opacity: 0.85; }
+  
+  .api-key-wrap { position: relative; }
+  .api-key-wrap input { padding-right: 80px; }
+  .toggle-vis {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none;
+    font-size: 12px; color: var(--forest); cursor: pointer; font-weight: 600;
+  }
+  
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  .status-pill.ok { background: #d9eef8; color: var(--forest); }
+  .status-pill.warn { background: #fef3cd; color: #856404; }
+  .status-pill.err { background: #fde8e4; color: var(--rust); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: white; border-radius: 10px;
+    padding: 20px; border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .stat-num {
+    font-family: "DM Sans", sans-serif;
+    font-weight: 700;
+    font-size: 36px; color: var(--forest);
+    line-height: 1;
+  }
+  .stat-label { font-size: 12px; opacity: 0.55; margin-top: 4px; }
+  
+  .log-entry {
+    display: flex; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .log-time { font-family: "DM Mono", monospace; opacity: 0.45; white-space: nowrap; }
+  .log-msg { flex: 1; }
+  .log-type { font-weight: 700; }
+  .log-type.info { color: var(--forest); }
+  .log-type.warn { color: var(--gold); }
+  .log-type.err { color: var(--rust); }
+  
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 14px; font-weight: 500; }
+  .toggle-desc { font-size: 12px; opacity: 0.5; margin-top: 2px; }
+  .toggle {
+    position: relative; width: 44px; height: 24px;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #ccc; border-radius: 24px; transition: 0.2s;
+  }
+  .slider:before {
+    content: ""; position: absolute;
+    width: 18px; height: 18px; left: 3px; top: 3px;
+    background: white; border-radius: 50%; transition: 0.2s;
+  }
+  input:checked + .slider { background: var(--forest); }
+  input:checked + .slider:before { transform: translateX(20px); }
+  
+  .save-toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--forest); color: white;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    transform: translateY(80px);
+    transition: transform 0.3s;
+    z-index: 9999;
+  }
+  .save-toast.show { transform: translateY(0); }
+  
+  .compliance-banner {
+    background: linear-gradient(135deg, var(--forest), #005a87);
+    color: white; border-radius: 10px; padding: 16px 20px;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px;
+  }
+  .compliance-banner .icon { font-size: 24px; }
+  .compliance-banner strong { font-size: 14px; }
+  .compliance-banner p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  
+  input[type=range] { width: 100%; accent-color: var(--forest); }
+  
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Bio-Test Laboratory</div>
+    <div class="login-sub">Admin Portal — LabLens Intelligence</div>
+    <label>Username</label>
+    <input type="text" id="login-user" placeholder="admin" autocomplete="username">
+    <label>Password</label>
+    <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-err">Invalid credentials. Please try again.</div>
+    <p style="font-size:11px;opacity:0.4;text-align:center;margin-top:16px;">Default: admin / admin123</p>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="admin-app">
+  <div class="topbar">
+    <div class="topbar-logo">Bio-Test <span>LabLens</span></div>
+    <span class="topbar-badge">ADMIN</span>
+    <span class="topbar-user" id="topbar-user">admin</span>
+    <button class="topbar-logout" onclick="doLogout()">Sign Out</button>
+  </div>
+  
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-section">Overview</div>
+      <div class="sidebar-item active" onclick="showPanel('dashboard', this)"><span class="icon">📊</span> Dashboard</div>
+      <div class="sidebar-section">Configuration</div>
+      <div class="sidebar-item" onclick="showPanel('api', this)"><span class="icon">🔑</span> API Keys</div>
+      <div class="sidebar-item" onclick="showPanel('ai', this)"><span class="icon">🤖</span> AI Settings</div>
+      <div class="sidebar-item" onclick="showPanel('compliance', this)"><span class="icon">🛡️</span> Compliance</div>
+      <div class="sidebar-section">Management</div>
+      <div class="sidebar-item" onclick="showPanel('users', this)"><span class="icon">👥</span> Access Control</div>
+      <div class="sidebar-item" onclick="showPanel('logs', this)"><span class="icon">📋</span> Audit Logs</div>
+      <div class="sidebar-item" onclick="showPanel('appearance', this)"><span class="icon">🎨</span> Appearance</div>
+    </div>
+    
+    <div class="content">
+    
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="panel-title">Dashboard</div>
+        <div class="panel-desc">System health and usage overview</div>
+        
+        <div class="compliance-banner">
+          <div class="icon">🛡️</div>
+          <div>
+            <strong>OHIP · PHIPA · Ontario Medical Guidelines — Active</strong>
+            <p>All AI responses are governed by Ontario healthcare privacy and billing standards.</p>
+          </div>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-num" id="stat-tests">1,334</div>
+            <div class="stat-label">Tests in database</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-queries">—</div>
+            <div class="stat-label">Queries today</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-sessions">—</div>
+            <div class="stat-label">Active sessions</div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title">System Status</div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Anthropic API</div><div class="toggle-desc">Connection to Claude AI</div></div>
+            <span class="status-pill" id="api-status-pill"><span class="status-dot"></span> Checking...</span>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Test Database</div><div class="toggle-desc">1,334 tests loaded</div></div>
+            <span class="status-pill ok"><span class="status-dot"></span> Operational</span>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">PHIPA Compliance Layer</div><div class="toggle-desc">Privacy guardrails active</div></div>
+            <span class="status-pill ok"><span class="status-dot"></span> Active</span>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">OHIP Billing Reference</div><div class="toggle-desc">Ontario billing codes</div></div>
+            <span class="status-pill ok"><span class="status-dot"></span> Active</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- API KEYS -->
+      <div class="panel" id="panel-api">
+        <div class="panel-title">API Keys</div>
+        <div class="panel-desc">Manage your Anthropic API key and other credentials</div>
+        
+        <div class="card">
+          <div class="card-title">Anthropic API Key</div>
+          <div class="form-group">
+            <label class="form-label">API Key</label>
+            <div class="api-key-wrap">
+              <input type="password" class="form-input" id="anthropic-key" placeholder="sk-ant-api03-...">
+              <button class="toggle-vis" onclick="toggleApiVis()">Show</button>
+            </div>
+            <div class="form-hint">Your key is stored in localStorage. In production, store server-side.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Model</label>
+            <select class="form-select" id="ai-model">
+              <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Recommended)</option>
+              <option value="claude-opus-4-20250514">Claude Opus 4 (Most capable)</option>
+              <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Fastest)</option>
+            </select>
+          </div>
+          <button class="btn-save" onclick="saveApiKey()">Save API Configuration</button>
+          <button style="margin-left:12px;padding:10px 24px;background:var(--mist);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px;" onclick="testApiKey()">Test Connection</button>
+          <div id="api-test-result" style="margin-top:12px;font-size:13px;"></div>
+        </div>
+      </div>
+      
+      <!-- AI SETTINGS -->
+      <div class="panel" id="panel-ai">
+        <div class="panel-title">AI Settings</div>
+        <div class="panel-desc">Configure LabLens intelligence behaviour and guardrails</div>
+        
+        <div class="card">
+          <div class="card-title">System Prompt Configuration</div>
+          <div class="form-group">
+            <label class="form-label">Core System Prompt</label>
+            <textarea class="form-textarea" id="system-prompt" rows="8"></textarea>
+            <div class="form-hint">This is prepended to every AI conversation. OHIP/PHIPA rules are injected automatically.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max Tokens per Response</label>
+            <input type="number" class="form-input" id="max-tokens" value="1000" min="200" max="4096">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Temperature (Creativity) — <span id="temp-val">0.3</span></label>
+            <input type="range" min="0" max="1" step="0.1" value="0.3" id="temperature" oninput="document.getElementById('temp-val').textContent=this.value">
+          </div>
+          <button class="btn-save" onclick="saveAiSettings()">Save AI Settings</button>
+        </div>
+        
+        <div class="card">
+          <div class="card-title">Behaviour Guardrails</div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Restrict to test list only</div><div class="toggle-desc">AI will only discuss tests in the Bio-Test database</div></div>
+            <label class="toggle"><input type="checkbox" id="restrict-tests" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Include OHIP billing in responses</div><div class="toggle-desc">Show billing status (OHIP covered vs. uninsured)</div></div>
+            <label class="toggle"><input type="checkbox" id="show-billing" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Include specimen requirements</div><div class="toggle-desc">Show vacutainer type and collection instructions</div></div>
+            <label class="toggle"><input type="checkbox" id="show-specimen" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Disclaimer on every response</div><div class="toggle-desc">Append PHIPA/medical disclaimer</div></div>
+            <label class="toggle"><input type="checkbox" id="show-disclaimer" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Log all queries</div><div class="toggle-desc">Store anonymized query logs for audit</div></div>
+            <label class="toggle"><input type="checkbox" id="log-queries" checked><span class="slider"></span></label>
+          </div>
+          <div style="margin-top:16px;">
+            <button class="btn-save" onclick="saveGuardrails()">Save Guardrails</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- COMPLIANCE -->
+      <div class="panel" id="panel-compliance">
+        <div class="panel-title">Compliance</div>
+        <div class="panel-desc">OHIP, PHIPA, and Ontario medical guideline configuration</div>
+        
+        <div class="card">
+          <div class="card-title">Active Compliance Frameworks</div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">PHIPA — Personal Health Information Protection Act</div><div class="toggle-desc">Ontario health privacy legislation</div></div>
+            <label class="toggle"><input type="checkbox" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">OHIP — Ontario Health Insurance Plan</div><div class="toggle-desc">Billing and coverage guidelines</div></div>
+            <label class="toggle"><input type="checkbox" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Ontario Laboratory Accreditation (CATO)</div><div class="toggle-desc">College of American Pathologists / ISO 15189</div></div>
+            <label class="toggle"><input type="checkbox" checked><span class="slider"></span></label>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title">Custom Compliance Notes</div>
+          <div class="form-group">
+            <label class="form-label">Additional Regulatory Notes</label>
+            <textarea class="form-textarea" id="compliance-notes" rows="4" placeholder="Enter any additional Ontario-specific guidelines to inject into AI context..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Footer Disclaimer Text</label>
+            <textarea class="form-textarea" id="disclaimer-text" rows="3"></textarea>
+          </div>
+          <button class="btn-save" onclick="saveCompliance()">Save Compliance Settings</button>
+        </div>
+      </div>
+      
+      <!-- USERS / ACCESS CONTROL -->
+      <div class="panel" id="panel-users">
+        <div class="panel-title">Access Control</div>
+        <div class="panel-desc">Manage admin credentials and public access settings</div>
+        
+        <div class="card">
+          <div class="card-title">Change Admin Password</div>
+          <div class="form-group">
+            <label class="form-label">Current Password</label>
+            <input type="password" class="form-input" id="cur-pass" placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" class="form-input" id="new-pass" placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" class="form-input" id="conf-pass" placeholder="••••••••">
+          </div>
+          <button class="btn-save" onclick="changePassword()">Update Password</button>
+          <div id="pass-msg" style="font-size:13px;margin-top:10px;"></div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title">Public Interface Access</div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Public access enabled</div><div class="toggle-desc">Allow anyone to use the LabLens search interface</div></div>
+            <label class="toggle"><input type="checkbox" id="public-access" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Require institution name</div><div class="toggle-desc">Prompt users to identify their clinic/hospital</div></div>
+            <label class="toggle"><input type="checkbox" id="req-institution"><span class="slider"></span></label>
+          </div>
+          <div style="margin-top:16px;">
+            <button class="btn-save" onclick="showToast('Access settings saved')">Save</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- AUDIT LOGS -->
+      <div class="panel" id="panel-logs">
+        <div class="panel-title">Audit Logs</div>
+        <div class="panel-desc">Query history and system events</div>
+        
+        <div class="card">
+          <div class="card-title">Recent Events</div>
+          <div id="log-container">
+            <div class="log-entry">
+              <span class="log-time">—</span>
+              <span class="log-msg"><span class="log-type info">INFO</span> No queries yet. Logs will appear here once users interact with LabLens.</span>
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px;">
+            <button class="btn-danger" onclick="clearLogs()">Clear Logs</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- APPEARANCE -->
+      <div class="panel" id="panel-appearance">
+        <div class="panel-title">Appearance</div>
+        <div class="panel-desc">Customize the public LabLens interface</div>
+        
+        <div class="card">
+          <div class="card-title">Branding</div>
+          <div class="form-group">
+            <label class="form-label">Laboratory Name</label>
+            <input type="text" class="form-input" id="lab-name" value="Bio-Test Laboratory">
+          </div>
+          <div class="form-group">
+            <label class="form-label">AI Assistant Name</label>
+            <input type="text" class="form-input" id="ai-name" value="LabLens">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Welcome Message</label>
+            <textarea class="form-textarea" id="welcome-msg" rows="2">Your sophisticated clinical companion. Ask anything about tests, results, or diagnostic preparations.</textarea>
+          </div>
+          <button class="btn-save" onclick="saveAppearance()">Save Appearance</button>
+        </div>
+        
+        <div class="card">
+          <div class="card-title">Suggested Inquiries</div>
+          <div id="suggestions-edit">
+          </div>
+          <button style="padding:8px 16px;background:var(--mist);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;margin-top:12px;" onclick="addSuggestion()">+ Add Suggestion</button>
+          <div style="margin-top:12px;">
+            <button class="btn-save" onclick="saveSuggestions()">Save Suggestions</button>
+          </div>
+        </div>
+      </div>
+      
+    </div><!-- /content -->
+  </div><!-- /layout -->
+</div><!-- /admin-app -->
+
+<div class="save-toast" id="save-toast">✓ Saved successfully</div>
+
+<script>
+const STORAGE_KEY = 'lablens_admin_';
+const DEFAULT_SYSTEM_PROMPT = `You are LabLens, a clinical laboratory intelligence assistant for Bio-Test Laboratory in Ontario, Canada.
+
+You ONLY answer questions about laboratory tests from the provided test list. Do not discuss topics outside laboratory medicine.
+
+COMPLIANCE REQUIREMENTS:
+- Follow PHIPA (Personal Health Information Protection Act) — never collect, store, or reference patient-identifiable information
+- Reference OHIP billing codes accurately — clearly distinguish OHIP-covered tests from uninsured (private-pay) tests
+- Apply Ontario Ministry of Health laboratory guidelines for test indications and specimen requirements
+- For UNINSURED tests, clearly state that fees apply and suggest patients consult their physician
+
+RESPONSE FORMAT:
+- Be concise and clinically accurate
+- Always include: test code, specimen type, vacutainer, billing status, TAT (turnaround time) when available
+- Flag OHIP vs uninsured status prominently
+- Note if a test is only available at specific laboratory locations (BTL, LL, PHL, etc.)
+- Never provide diagnostic conclusions — refer to ordering physician for interpretation
+
+If a test is not found in the database, say so clearly and suggest similar tests if applicable.`;
+
+const DEFAULT_DISCLAIMER = `This information is provided for reference purposes only and is governed by PHIPA and Ontario healthcare regulations. LabLens does not provide medical diagnoses or treatment advice. All laboratory test orders must be authorized by a licensed Ontario healthcare provider. For questions about OHIP coverage, contact ServiceOntario.`;
+
+const DEFAULT_SUGGESTIONS = [
+  { icon: '🧬', title: 'Hemoglobin A1C details', desc: 'Understand the 3-month average glucose window' },
+  { icon: '🦋', title: 'Thyroid Reflex Testing', desc: 'When is a T4 test automatically triggered?' },
+  { icon: '💧', title: 'Fasting Requirements', desc: 'Which panels require an 8–12 hour fast?' },
+  { icon: '⏱️', title: 'Result Turnaround', desc: 'Expected timelines for advanced genetic screening' },
+];
+
+function store(key, val) { try { localStorage.setItem(STORAGE_KEY + key, JSON.stringify(val)); } catch(e) {} }
+function load(key, def) { try { const v = localStorage.getItem(STORAGE_KEY + key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+
+// AUTH
+const CREDS = { user: 'admin', pass: 'admin123' };
+function doLogin() {
+  const u = document.getElementById('login-user').value;
+  const p = document.getElementById('login-pass').value;
+  const storedPass = load('admin_pass', CREDS.pass);
+  if (u === CREDS.user && p === storedPass) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-app').style.display = 'flex';
+    document.getElementById('admin-app').style.flexDirection = 'column';
+    initAdmin();
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+  }
+}
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogout() {
+  document.getElementById('admin-app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+}
+
+function initAdmin() {
+  // Load saved values
+  document.getElementById('anthropic-key').value = load('api_key', '');
+  document.getElementById('ai-model').value = load('model', 'claude-sonnet-4-20250514');
+  document.getElementById('system-prompt').value = load('system_prompt', DEFAULT_SYSTEM_PROMPT);
+  document.getElementById('max-tokens').value = load('max_tokens', 1000);
+  document.getElementById('temperature').value = load('temperature', 0.3);
+  document.getElementById('temp-val').textContent = load('temperature', 0.3);
+  document.getElementById('disclaimer-text').value = load('disclaimer', DEFAULT_DISCLAIMER);
+  document.getElementById('compliance-notes').value = load('compliance_notes', '');
+  document.getElementById('lab-name').value = load('lab_name', 'Bio-Test Laboratory');
+  document.getElementById('ai-name').value = load('ai_name', 'LabLens');
+  document.getElementById('welcome-msg').value = load('welcome_msg', 'Your sophisticated clinical companion. Ask anything about tests, results, or diagnostic preparations.');
+  
+  // Guardrails
+  const gr = load('guardrails', { restrictTests: true, showBilling: true, showSpecimen: true, showDisclaimer: true, logQueries: true });
+  document.getElementById('restrict-tests').checked = gr.restrictTests;
+  document.getElementById('show-billing').checked = gr.showBilling;
+  document.getElementById('show-specimen').checked = gr.showSpecimen;
+  document.getElementById('show-disclaimer').checked = gr.showDisclaimer;
+  document.getElementById('log-queries').checked = gr.logQueries;
+  
+  // Suggestions
+  renderSuggestions();
+  
+  // Logs
+  renderLogs();
+  
+  // API status
+  checkApiStatus();
+  
+  // Update stats
+  const logs = load('query_logs', []);
+  const today = new Date().toDateString();
+  const todayLogs = logs.filter(l => new Date(l.ts).toDateString() === today);
+  document.getElementById('stat-queries').textContent = todayLogs.length;
+  document.getElementById('stat-sessions').textContent = 0;
+}
+
+function showPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+function showToast(msg = 'Saved successfully') {
+  const t = document.getElementById('save-toast');
+  t.textContent = '✓ ' + msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function toggleApiVis() {
+  const inp = document.getElementById('anthropic-key');
+  const btn = inp.nextElementSibling;
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
+  else { inp.type = 'password'; btn.textContent = 'Show'; }
+}
+
+async function saveApiKey() {
+  store('api_key', document.getElementById('anthropic-key').value);
+  store('model', document.getElementById('ai-model').value);
+  showToast();
+  checkApiStatus();
+}
+
+async function testApiKey() {
+  const key = document.getElementById('anthropic-key').value;
+  const res = document.getElementById('api-test-result');
+  if (!key) { res.innerHTML = '<span style="color:var(--rust)">Please enter an API key first.</span>'; return; }
+  res.innerHTML = 'Testing connection...';
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 10, messages: [{ role: 'user', content: 'Hi' }] })
+    });
+    if (r.ok) {
+      res.innerHTML = '<span style="color:var(--forest)">✓ Connection successful! API key is valid.</span>';
+      const pill = document.getElementById('api-status-pill');
+      pill.className = 'status-pill ok';
+      pill.innerHTML = '<span class="status-dot"></span> Connected';
+    } else {
+      const err = await r.json();
+      res.innerHTML = `<span style="color:var(--rust)">✗ Error: ${err.error?.message || r.status}</span>`;
+    }
+  } catch(e) {
+    res.innerHTML = `<span style="color:var(--rust)">✗ Network error: ${e.message}</span>`;
+  }
+}
+
+async function checkApiStatus() {
+  const key = load('api_key', '');
+  const pill = document.getElementById('api-status-pill');
+  if (!key) {
+    pill.className = 'status-pill warn';
+    pill.innerHTML = '<span class="status-dot"></span> Not configured';
+    return;
+  }
+  pill.className = 'status-pill warn';
+  pill.innerHTML = '<span class="status-dot"></span> Checking...';
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 5, messages: [{ role: 'user', content: 'Hi' }] })
+    });
+    pill.className = r.ok ? 'status-pill ok' : 'status-pill err';
+    pill.innerHTML = r.ok ? '<span class="status-dot"></span> Connected' : '<span class="status-dot"></span> Auth Error';
+  } catch(e) {
+    pill.className = 'status-pill err';
+    pill.innerHTML = '<span class="status-dot"></span> Unreachable';
+  }
+}
+
+function saveAiSettings() {
+  store('system_prompt', document.getElementById('system-prompt').value);
+  store('max_tokens', parseInt(document.getElementById('max-tokens').value));
+  store('temperature', parseFloat(document.getElementById('temperature').value));
+  showToast();
+}
+
+function saveGuardrails() {
+  store('guardrails', {
+    restrictTests: document.getElementById('restrict-tests').checked,
+    showBilling: document.getElementById('show-billing').checked,
+    showSpecimen: document.getElementById('show-specimen').checked,
+    showDisclaimer: document.getElementById('show-disclaimer').checked,
+    logQueries: document.getElementById('log-queries').checked,
+  });
+  showToast();
+}
+
+function saveCompliance() {
+  store('compliance_notes', document.getElementById('compliance-notes').value);
+  store('disclaimer', document.getElementById('disclaimer-text').value);
+  showToast();
+}
+
+function saveAppearance() {
+  store('lab_name', document.getElementById('lab-name').value);
+  store('ai_name', document.getElementById('ai-name').value);
+  store('welcome_msg', document.getElementById('welcome-msg').value);
+  showToast();
+}
+
+function changePassword() {
+  const cur = document.getElementById('cur-pass').value;
+  const nw = document.getElementById('new-pass').value;
+  const cf = document.getElementById('conf-pass').value;
+  const msg = document.getElementById('pass-msg');
+  const stored = load('admin_pass', CREDS.pass);
+  if (cur !== stored) { msg.innerHTML = '<span style="color:var(--rust)">Current password incorrect.</span>'; return; }
+  if (nw !== cf) { msg.innerHTML = '<span style="color:var(--rust)">Passwords do not match.</span>'; return; }
+  if (nw.length < 6) { msg.innerHTML = '<span style="color:var(--rust)">Password must be at least 6 characters.</span>'; return; }
+  store('admin_pass', nw);
+  msg.innerHTML = '<span style="color:var(--forest)">✓ Password updated successfully.</span>';
+  document.getElementById('cur-pass').value = '';
+  document.getElementById('new-pass').value = '';
+  document.getElementById('conf-pass').value = '';
+}
+
+// SUGGESTIONS
+let suggestions = load('suggestions', DEFAULT_SUGGESTIONS);
+function renderSuggestions() {
+  suggestions = load('suggestions', DEFAULT_SUGGESTIONS);
+  const c = document.getElementById('suggestions-edit');
+  c.innerHTML = suggestions.map((s, i) => `
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+      <input type="text" class="form-input" style="width:48px;" value="${s.icon}" onchange="suggestions[${i}].icon=this.value" placeholder="🧬">
+      <input type="text" class="form-input" value="${s.title}" onchange="suggestions[${i}].title=this.value" placeholder="Title">
+      <input type="text" class="form-input" value="${s.desc}" onchange="suggestions[${i}].desc=this.value" placeholder="Description">
+      <button onclick="removeSuggestion(${i})" style="padding:8px 12px;background:var(--rust);color:white;border:none;border-radius:6px;cursor:pointer;">✕</button>
+    </div>
+  `).join('');
+}
+function addSuggestion() {
+  suggestions.push({ icon: '🔬', title: 'New inquiry', desc: 'Description' });
+  store('suggestions', suggestions); renderSuggestions();
+}
+function removeSuggestion(i) {
+  suggestions.splice(i, 1); store('suggestions', suggestions); renderSuggestions();
+}
+function saveSuggestions() {
+  store('suggestions', suggestions); showToast();
+}
+
+// LOGS
+function renderLogs() {
+  const logs = load('query_logs', []);
+  const c = document.getElementById('log-container');
+  if (!logs.length) {
+    c.innerHTML = '<div class="log-entry"><span class="log-time">—</span><span class="log-msg"><span class="log-type info">INFO</span> No queries yet. Logs will appear here once users interact with LabLens.</span></div>';
+    return;
+  }
+  c.innerHTML = logs.slice(-50).reverse().map(l => `
+    <div class="log-entry">
+      <span class="log-time">${new Date(l.ts).toLocaleTimeString()}</span>
+      <span class="log-msg"><span class="log-type info">QUERY</span> ${l.query.substring(0,80)}${l.query.length>80?'...':''}</span>
+    </div>
+  `).join('');
+}
+function clearLogs() {
+  if (confirm('Clear all audit logs?')) { store('query_logs', []); renderLogs(); showToast('Logs cleared'); }
+}
+</script>
+</body>
+</html>
